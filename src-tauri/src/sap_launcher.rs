@@ -1,5 +1,7 @@
 use crate::models::{LaunchResult, SAPConnection};
 use std::path::Path;
+#[allow(unused_imports)]
+use std::process::Command;
 
 pub struct SapLauncher;
 
@@ -42,7 +44,7 @@ impl SapLauncher {
 
     /// 启动 SAP GUI 连接
     pub fn launch(conn: &SAPConnection, tcode: Option<&str>, configured_sapshcut: &str) -> LaunchResult {
-        let (_found, executable) = Self::detect_sapshcut(configured_sapshcut);
+        let (found, executable) = Self::detect_sapshcut(configured_sapshcut);
 
         #[cfg(target_os = "windows")]
         {
@@ -89,6 +91,7 @@ impl SapLauncher {
 
         #[cfg(not(target_os = "windows"))]
         {
+            let _ = found;
             LaunchResult {
                 success: true,
                 message: format!(
@@ -104,7 +107,8 @@ impl SapLauncher {
 
     /// 备用机制：生成临时 .sap 文件并用系统默认程序拉起
     #[allow(dead_code)]
-    fn launch_via_sap_shortcut_file(conn: &SAPConnection, tcode: Option<&str>, _reason: &str) -> LaunchResult {
+    fn launch_via_sap_shortcut_file(conn: &SAPConnection, tcode: Option<&str>, reason: &str) -> LaunchResult {
+        let _ = reason;
         let temp_dir = std::env::temp_dir();
         let sap_file = temp_dir.join(format!("qgui_{}_{}.sap", conn.sid, conn.client));
 
