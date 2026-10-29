@@ -15,6 +15,7 @@
       {
         "label": "main",
         "title": "Q-GUI (极龟)",
+        "url": "index.html",
         "width": 860,
         "height": 640,
         "minWidth": 760,
@@ -22,7 +23,8 @@
         "resizable": true,
         "fullscreen": false,
         "decorations": true,
-        "visible": true
+        "visible": true,
+        "center": true
       },
       {
         "label": "hud",
@@ -32,18 +34,15 @@
         "height": 420,
         "resizable": false,
         "decorations": false,
-        "transparent": true,
+        "transparent": false,
         "alwaysOnTop": true,
         "skipTaskbar": true,
-        "visible": false
+        "visible": false,
+        "center": true
       }
     ],
     "security": {
       "csp": null
-    },
-    "trayIcon": {
-      "iconPath": "icons/icon.png",
-      "tooltip": "Q-GUI (极龟) - SAP 快捷启动中枢"
     }
   },
   "bundle": {

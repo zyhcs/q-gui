@@ -34,10 +34,12 @@ pub fn run() {
         .setup(move |app| {
             let handle = app.handle();
 
-            // 1. 设置系统托盘
-            setup_tray(handle)?;
+            // 1. 设置系统托盘（增加安全容错，即便托盘失败也不闪退）
+            if let Err(err) = setup_tray(handle) {
+                eprintln!("[Warning] Failed to setup tray icon: {:?}", err);
+            }
 
-            // 2. 注册全局唤出快捷键
+            // 2. 注册全局唤出快捷键（增加安全容错）
             let settings = store_manager.lock().unwrap().get_settings();
             let hotkey_str = if settings.hotkey.is_empty() {
                 "Ctrl+Shift+Space"
@@ -60,6 +62,12 @@ pub fn run() {
                         let _ = hud_clone.hide();
                     }
                 });
+            }
+
+            // 4. 显式确保主窗口被正确唤醒并聚焦显示
+            if let Some(main_win) = app.get_webview_window("main") {
+                let _ = main_win.show();
+                let _ = main_win.set_focus();
             }
 
             Ok(())
@@ -93,9 +101,16 @@ fn setup_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
 
     let menu = Menu::with_items(app, &[&open_i, &hud_i, &quit_i])?;
 
-    let _tray = TrayIconBuilder::new()
+    let mut builder = TrayIconBuilder::with_id("qgui_tray_main")
         .menu(&menu)
-        .tooltip("Q-GUI (极龟) - SAP 快捷启动中枢")
+        .tooltip("Q-GUI (极龟) - SAP 快捷启动中枢");
+
+    // 显式载入应用窗口图标，避免未设置 icon 导致崩溃
+    if let Some(icon) = app.default_window_icon() {
+        builder = builder.icon(icon.clone());
+    }
+
+    let _tray = builder
         .on_menu_event(|app, event| match event.id.as_ref() {
             "open" => {
                 if let Some(win) = app.get_webview_window("main") {
