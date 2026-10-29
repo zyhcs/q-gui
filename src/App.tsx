@@ -6,6 +6,7 @@ import { SettingsPanel } from './components/SettingsPanel';
 import { ToastContainer, ToastMessage } from './components/Toast';
 import { SAPConnection, AppSettings, LANDevice } from './types';
 import { t as i18nT, TranslationKey } from './i18n';
+import { api } from './services/api';
 
 export const App: React.FC = () => {
   const [connections, setConnections] = useState<SAPConnection[]>([]);
@@ -44,23 +45,21 @@ export const App: React.FC = () => {
   // 初始化加载数据
   useEffect(() => {
     const initData = async () => {
-      if (window.electronAPI) {
-        try {
-          const [conns, sets] = await Promise.all([
-            window.electronAPI.getConnections(),
-            window.electronAPI.getSettings(),
-          ]);
+      try {
+        const [conns, sets] = await Promise.all([
+          api.getConnections(),
+          api.getSettings(),
+        ]);
 
-          if (conns && conns.length > 0) {
-            setConnections(conns);
-            setSelectedId(conns[0].id);
-          }
-          if (sets) {
-            setSettings(sets);
-          }
-        } catch (e) {
-          console.error('Failed to load initial data:', e);
+        if (conns && conns.length > 0) {
+          setConnections(conns);
+          setSelectedId(conns[0].id);
         }
+        if (sets) {
+          setSettings(sets);
+        }
+      } catch (e) {
+        console.error('Failed to load initial data:', e);
       }
     };
 
@@ -88,9 +87,7 @@ export const App: React.FC = () => {
     const newLang: 'zh' | 'en' = lang === 'zh' ? 'en' : 'zh';
     const updated: AppSettings = { ...settings, lang: newLang };
     setSettings(updated);
-    if (window.electronAPI) {
-      await window.electronAPI.saveSettings(updated);
-    }
+    await api.saveSettings(updated);
   };
 
   // 启动 SAP GUI
@@ -107,26 +104,22 @@ export const App: React.FC = () => {
       if (!confirmLaunch) return;
     }
 
-    if (window.electronAPI) {
-      const res = await window.electronAPI.launchSAP(id, tcode);
-      if (res.success) {
-        showToast(
-          `${translate('launch_toast')}${target.sid}${tcode ? ` -> ${tcode}` : ''}`,
-          'success'
-        );
-        // 更新最后启动与次数
-        const updated = connections.map((c) =>
-          c.id === id
-            ? { ...c, lastLaunched: new Date().toISOString(), launchCount: (c.launchCount || 0) + 1 }
-            : c
-        );
-        setConnections(updated);
-        await window.electronAPI.saveConnections(updated);
-      } else {
-        showToast(res.message, 'error');
-      }
+    const res = await api.launchSAP(id, tcode);
+    if (res.success) {
+      showToast(
+        `${translate('launch_toast')}${target.sid}${tcode ? ` -> ${tcode}` : ''}`,
+        'success'
+      );
+      // 更新最后启动与次数
+      const updated = connections.map((c) =>
+        c.id === id
+          ? { ...c, lastLaunched: new Date().toISOString(), launchCount: (c.launchCount || 0) + 1 }
+          : c
+      );
+      setConnections(updated);
+      await api.saveConnections(updated);
     } else {
-      showToast(`${translate('launch_toast')}${target.sid} (Preview Mode)`, 'success');
+      showToast(res.message, 'error');
     }
   };
 
@@ -155,9 +148,7 @@ export const App: React.FC = () => {
     const updated = [cloned, ...connections];
     setConnections(updated);
     setSelectedId(cloned.id);
-    if (window.electronAPI) {
-      await window.electronAPI.saveConnections(updated);
-    }
+    await api.saveConnections(updated);
     showToast(`${translate('duplicated_toast')}${cloned.name}`, 'success');
   };
 
@@ -181,18 +172,14 @@ export const App: React.FC = () => {
     setConnections(updated);
     setSelectedId(newConn.id);
     setCurrentMode('config');
-    if (window.electronAPI) {
-      window.electronAPI.saveConnections(updated);
-    }
+    api.saveConnections(updated);
   };
 
   // 保存连接配置
   const handleSaveConnection = async (conn: SAPConnection) => {
     const updated = connections.map((c) => (c.id === conn.id ? conn : c));
     setConnections(updated);
-    if (window.electronAPI) {
-      await window.electronAPI.saveConnections(updated);
-    }
+    await api.saveConnections(updated);
     showToast(`${translate('saved_toast')}${conn.sid}`, 'success');
   };
 
@@ -203,112 +190,100 @@ export const App: React.FC = () => {
     if (selectedId === id) {
       setSelectedId(updated.length > 0 ? updated[0].id : '');
     }
-    if (window.electronAPI) {
-      await window.electronAPI.saveConnections(updated);
-    }
+    await api.saveConnections(updated);
     showToast(translate('deleted_toast'), 'info');
   };
 
   // 测试单端口连通性
   const handleTestPing = async (host: string, sysnr: string) => {
-    if (window.electronAPI) {
-      const res = await window.electronAPI.testPing(host, sysnr);
-      if (res.ok) {
-        showToast(`${translate('ping_ok')} ${res.latency}ms)`, 'success');
-      } else {
-        showToast(lang === 'zh' ? '网络探测超时或端口不可达' : 'Connection timeout / unreachable', 'error');
-      }
+    const res = await api.testPing(host, sysnr);
+    if (res.ok) {
+      showToast(`${translate('ping_ok')} ${res.latency}ms)`, 'success');
     } else {
-      showToast(`${translate('ping_ok')} 16ms)`, 'success');
+      showToast(lang === 'zh' ? '网络探测超时或端口不可达' : 'Connection timeout / unreachable', 'error');
     }
   };
 
   // 探测全部端口延迟
   const handlePingAll = async () => {
     showToast(lang === 'zh' ? '正在并发探测所有 SAP Dispatcher 端口...' : 'Probing all SAP instances...', 'info');
-    if (window.electronAPI) {
-      const probes = await Promise.all(
-        connections.map(async (c) => {
-          const res = await window.electronAPI.testPing(c.host, c.sysnr);
-          return { id: c.id, pingMs: res.ok ? res.latency : undefined };
-        })
-      );
-      const pingMap = new Map(probes.map((p) => [p.id, p.pingMs]));
-      const updated = connections.map((c) => ({
-        ...c,
-        pingMs: pingMap.get(c.id),
-      }));
-      setConnections(updated);
-      showToast(translate('ping_all_ok'), 'success');
-    } else {
-      showToast(translate('ping_all_ok'), 'success');
-    }
+    const probes = await Promise.all(
+      connections.map(async (c) => {
+        const res = await api.testPing(c.host, c.sysnr);
+        return { id: c.id, pingMs: res.ok ? res.latency : undefined };
+      })
+    );
+    const pingMap = new Map(probes.map((p) => [p.id, p.pingMs]));
+    const updated = connections.map((c) => ({
+      ...c,
+      pingMs: pingMap.get(c.id),
+    }));
+    setConnections(updated);
+    showToast(translate('ping_all_ok'), 'success');
   };
 
   // 更新全局设置
   const handleUpdateSettings = async (newSettings: Partial<AppSettings>) => {
     const merged = { ...settings, ...newSettings };
     setSettings(merged);
-    if (window.electronAPI) {
-      await window.electronAPI.saveSettings(merged);
-    }
+    await api.saveSettings(merged);
     showToast(lang === 'zh' ? '偏好设置已更新' : 'Settings updated', 'success');
   };
 
   // 扫描本地 Landscape
   const handleScanLandscape = async () => {
-    if (window.electronAPI) {
-      const res = await window.electronAPI.scanLandscape();
-      if (res.success && res.items && res.items.length > 0) {
-        // 合并去重
-        const existingKeys = new Set(connections.map((c) => `${c.sid}_${c.client}_${c.host}`));
-        const toAdd = res.items.filter((item) => !existingKeys.has(`${item.sid}_${item.client}_${item.host}`));
-        if (toAdd.length > 0) {
-          const merged = [...connections, ...toAdd];
-          setConnections(merged);
-          await window.electronAPI.saveConnections(merged);
-          showToast(
-            lang === 'zh' ? `成功导入 ${toAdd.length} 个本地 SAP GUI 连接` : `Imported ${toAdd.length} connections`,
-            'success'
-          );
-        } else {
-          showToast(lang === 'zh' ? '未发现未收录的新连接' : 'No new connections found', 'info');
-        }
+    const res = await api.scanLandscape(settings.landscapePath);
+    if (res.success && res.items && res.items.length > 0) {
+      // 合并去重
+      const existingKeys = new Set(connections.map((c) => `${c.sid}_${c.client}_${c.host}`));
+      const toAdd = res.items.filter((item) => !existingKeys.has(`${item.sid}_${item.client}_${item.host}`));
+      if (toAdd.length > 0) {
+        const merged = [...connections, ...toAdd];
+        setConnections(merged);
+        await api.saveConnections(merged);
+        showToast(
+          lang === 'zh' ? `成功导入 ${toAdd.length} 个本地 SAP GUI 连接` : `Imported ${toAdd.length} connections`,
+          'success'
+        );
       } else {
-        showToast(res.message || '未扫描到配置项', 'warning');
+        showToast(lang === 'zh' ? '未发现未收录的新连接' : 'No new connections found', 'info');
       }
+    } else {
+      showToast(res.message || '未扫描到配置项', 'warning');
     }
   };
 
   // 导出配置备份
   const handleExportData = async () => {
-    if (window.electronAPI) {
-      const res = await window.electronAPI.exportData();
-      if (res.success) {
-        showToast(lang === 'zh' ? `备份已成功导出到: ${res.filePath}` : `Backup exported: ${res.filePath}`, 'success');
-      }
+    const res = await api.exportData();
+    if (res.success && res.filePath) {
+      showToast(lang === 'zh' ? `备份已成功导出到: ${res.filePath}` : `Backup exported: ${res.filePath}`, 'success');
+    } else if (res.error) {
+      showToast(`导出失败: ${res.error}`, 'error');
     }
   };
 
   // 导入备份恢复
   const handleImportData = async () => {
-    if (window.electronAPI) {
-      const res = await window.electronAPI.importData();
-      if (res.success) {
-        const fresh = await window.electronAPI.getConnections();
-        setConnections(fresh);
-        showToast(res.message || '配置导入成功', 'success');
-      }
+    // 弹出输入框或默认导入
+    const jsonStr = prompt(lang === 'zh' ? '请粘贴备份的 JSON 文本内容:' : 'Paste JSON backup content:');
+    if (!jsonStr) return;
+
+    const res = await api.importData(jsonStr);
+    if (res.success) {
+      const fresh = await api.getConnections();
+      setConnections(fresh);
+      showToast(lang === 'zh' ? `成功恢复 ${res.count} 条连接记录` : `Restored ${res.count} connections`, 'success');
+    } else {
+      showToast(`导入失败: ${res.error}`, 'error');
     }
   };
 
   // 刷新局域网在线同事设备
   const handleRefreshLANDevices = async () => {
-    if (window.electronAPI) {
-      const devices = await window.electronAPI.scanLANDevices();
-      setLanDevices(devices);
-      showToast(lang === 'zh' ? `已发现 ${devices.length} 台内网设备` : `Found ${devices.length} LAN peers`, 'info');
-    }
+    const devices = await api.scanLANDevices();
+    setLanDevices(devices);
+    showToast(lang === 'zh' ? `已发现 ${devices.length} 台内网设备` : `Found ${devices.length} LAN peers`, 'info');
   };
 
   // 向指定同事设备推送配置
@@ -317,13 +292,11 @@ export const App: React.FC = () => {
       showToast(lang === 'zh' ? '请先选择需要分享的系统连接' : 'Please select a system first', 'warning');
       return;
     }
-    if (window.electronAPI) {
-      const ok = await window.electronAPI.sendConfigToPeer(peer.ip, peer.port, selectedId);
-      if (ok) {
-        showToast(lang === 'zh' ? `已安全推送连接配置至【${peer.name}】` : `Pushed config to ${peer.name}`, 'success');
-      } else {
-        showToast(lang === 'zh' ? '推送失败，请确认对方网络通畅' : 'Push failed', 'error');
-      }
+    const ok = await api.sendConfigToPeer(peer.ip, peer.port, selectedId);
+    if (ok) {
+      showToast(lang === 'zh' ? `已安全推送连接配置至【${peer.name}】` : `Pushed config to ${peer.name}`, 'success');
+    } else {
+      showToast(lang === 'zh' ? '推送失败，请确认对方网络通畅' : 'Push failed', 'error');
     }
   };
 

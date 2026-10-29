@@ -1,0 +1,28 @@
+[package]
+name = "q-gui"
+version = "1.0.0-beta.1"
+description = "Q-GUI (极龟) - Ultra-Lightweight Rust & Tauri SAP GUI Launcher"
+authors = ["zyhcs"]
+edition = "2021"
+
+[lib]
+name = "q_gui_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-shell = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-global-shortcut = "2"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1.0", features = ["full"] }
+quick-xml = "0.37"
+local-ip-address = "0.6"
+chrono = { version = "0.4", features = ["serde"] }
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.58", features = ["Win32_UI_WindowsAndMessaging", "Win32_Foundation"] }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Palette,
   Keyboard,
@@ -11,10 +11,15 @@ import {
   Laptop,
   Monitor,
   Send,
-  Shield
+  Shield,
+  FileCode,
+  SearchCode,
+  FolderOpen
 } from 'lucide-react'
 import { AppSettings, LANDevice } from '../types'
 import { TranslationKey } from '../i18n'
+import { api } from '../services/api'
+import { open as openDialog } from '@tauri-apps/plugin-dialog'
 
 interface SettingsPanelProps {
   settings: AppSettings;
@@ -41,6 +46,35 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 }) => {
   const [activeSubTab, setActiveSubTab] = useState<'appearance' | 'hotkeys' | 'data' | 'lan'>('appearance')
   const [isRecordingKey, setIsRecordingKey] = useState<boolean>(false)
+  const [isSapshcutValid, setIsSapshcutValid] = useState<boolean>(true)
+
+  useEffect(() => {
+    api.detectSapshcut(settings.sapshcutPath).then(([found]) => {
+      setIsSapshcutValid(found)
+    })
+  }, [settings.sapshcutPath])
+
+  const handleDetectSapshcut = async () => {
+    const [found, detectedPath] = await api.detectSapshcut(settings.sapshcutPath)
+    setIsSapshcutValid(found)
+    onUpdateSettings({ sapshcutPath: detectedPath })
+  }
+
+  const handleBrowseSapshcut = async () => {
+    try {
+      const selected = await openDialog({
+        multiple: false,
+        directory: false,
+        filters: [{ name: 'SAP GUI Launcher (sapshcut.exe)', extensions: ['exe'] }],
+      })
+      if (selected && typeof selected === 'string') {
+        onUpdateSettings({ sapshcutPath: selected })
+        setIsSapshcutValid(true)
+      }
+    } catch (e) {
+      console.warn('Dialog cancel/error:', e)
+    }
+  }
 
   const handleRecordKey = () => {
     setIsRecordingKey(true)
@@ -305,7 +339,64 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               <p className="text-[11px] text-zinc-500 mt-0.5">{t('st_data_subtitle')}</p>
             </div>
 
-            {/* Landscape XML File */}
+            {/* 1. SAPGUI Executable Path (sapshcut.exe) */}
+            <div className="p-3.5 rounded-xl bg-zinc-900/60 border border-white/[0.08] space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <FileCode className="w-4 h-4 text-emerald-400" />
+                  <span className="font-semibold text-zinc-200">{t('sapshcut_title')}</span>
+                </div>
+                {isSapshcutValid ? (
+                  <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#10b981]"></span>
+                    {t('sapshcut_status_ready')}
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-mono text-rose-400 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+                    {t('sapshcut_status_not_found')}
+                  </span>
+                )}
+              </div>
+
+              <div className="text-[11px] text-zinc-400">
+                {t('sapshcut_subtitle')}
+              </div>
+
+              {/* Editable Path Input */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={settings.sapshcutPath}
+                  onChange={(e) => onUpdateSettings({ sapshcutPath: e.target.value })}
+                  placeholder="C:\Program Files (x86)\SAP\FrontEnd\SAPgui\sapshcut.exe"
+                  className="flex-1 font-mono text-[11px] px-3 py-2 rounded-lg bg-zinc-950 border border-white/10 text-zinc-200 focus:outline-none focus:border-emerald-500/50"
+                />
+              </div>
+
+              {/* Action Buttons: Auto-Detect & Browse */}
+              <div className="flex items-center gap-2 pt-0.5">
+                <button
+                  type="button"
+                  onClick={handleDetectSapshcut}
+                  className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-medium text-xs flex items-center gap-1.5 transition-colors border border-white/[0.08]"
+                >
+                  <SearchCode className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>{t('btn_detect_sapshcut')}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleBrowseSapshcut}
+                  className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-medium text-xs flex items-center gap-1.5 transition-colors border border-white/[0.08]"
+                >
+                  <FolderOpen className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>{t('btn_browse_file')}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* 2. Landscape XML File */}
             <div className="p-3.5 rounded-xl bg-zinc-900/60 border border-white/[0.08] space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">

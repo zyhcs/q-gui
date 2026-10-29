@@ -1,0 +1,64 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Q-GUI",
+  "version": "1.0.0-beta.1",
+  "identifier": "com.zyhcs.qgui",
+  "build": {
+    "beforeDevCommand": "pnpm dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "pnpm build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "label": "main",
+        "title": "Q-GUI (极龟)",
+        "width": 860,
+        "height": 640,
+        "minWidth": 760,
+        "minHeight": 580,
+        "resizable": true,
+        "fullscreen": false,
+        "decorations": true,
+        "visible": true
+      },
+      {
+        "label": "hud",
+        "title": "Q-GUI Mini HUD",
+        "url": "index.html?window=hud",
+        "width": 620,
+        "height": 420,
+        "resizable": false,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "visible": false
+      }
+    ],
+    "security": {
+      "csp": null
+    },
+    "trayIcon": {
+      "iconPath": "icons/icon.png",
+      "tooltip": "Q-GUI (极龟) - SAP 快捷启动中枢"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/icon.ico",
+      "icons/icon.png"
+    ]
+  },
+  "plugins": {
+    "global-shortcut": {},
+    "dialog": {},
+    "shell": {
+      "open": true
+    }
+  }
+}

@@ -3,6 +3,7 @@ dist
 dist-electron
 release
 .vite
+src-tauri/target
 *.local
 .DS_Store
 Thumbs.db

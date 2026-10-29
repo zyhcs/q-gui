@@ -1,6 +1,7 @@
 import React from 'react'
 import { Zap, Sliders, Settings2, Languages, Minus, X } from 'lucide-react'
 import { TranslationKey } from '../i18n'
+import { api } from '../services/api'
 
 interface HeaderProps {
   currentMode: 'launcher' | 'config' | 'settings';
@@ -18,15 +19,11 @@ export const Header: React.FC<HeaderProps> = ({
   t
 }) => {
   const handleMinimize = () => {
-    if (window.electronAPI?.minimizeWindow) {
-      window.electronAPI.minimizeWindow()
-    }
+    api.minimizeWindow()
   }
 
   const handleClose = () => {
-    if (window.electronAPI?.closeWindow) {
-      window.electronAPI.closeWindow()
-    }
+    api.closeWindow()
   }
 
   return (

@@ -29,7 +29,7 @@ export interface AppSettings {
   minimizeToTray: boolean;
   lanBroadcast: boolean;
   lang: 'zh' | 'en';
-  sapshcutPath: string;
+  sapshcutPath: string; // 维护 sapshcut.exe 路径
   landscapePath: string;
 }
 
@@ -41,25 +41,19 @@ export interface LANDevice {
   lastSeen: number;
 }
 
-export interface IpcApi {
-  getConnections: () => Promise<SAPConnection[]>;
-  saveConnections: (connections: SAPConnection[]) => Promise<boolean>;
-  getSettings: () => Promise<AppSettings>;
-  saveSettings: (settings: AppSettings) => Promise<boolean>;
-  launchSAP: (id: string, tcode?: string) => Promise<{ success: boolean; message: string }>;
-  testPing: (host: string, sysnr: string) => Promise<{ ok: boolean; latency: number }>;
-  scanLandscape: () => Promise<{ success: boolean; count: number; items?: SAPConnection[]; message?: string }>;
-  exportData: () => Promise<{ success: boolean; filePath?: string }>;
-  importData: () => Promise<{ success: boolean; count: number; message?: string }>;
-  scanLANDevices: () => Promise<LANDevice[]>;
-  sendConfigToPeer: (peerIp: string, peerPort: number, connectionId: string) => Promise<boolean>;
-  minimizeWindow: () => void;
-  closeWindow: () => void;
-  hideHUD: () => void;
+export interface LaunchResult {
+  success: boolean;
+  message: string;
 }
 
-declare global {
-  interface Window {
-    electronAPI: IpcApi;
-  }
+export interface PingResult {
+  ok: boolean;
+  latency: number;
+}
+
+export interface ScanResult {
+  success: boolean;
+  count: number;
+  items: SAPConnection[];
+  message: string;
 }

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { Terminal } from 'lucide-react'
 import { SAPConnection } from '../types'
 import { translations, TranslationKey } from '../i18n'
+import { api } from '../services/api'
 
 export const MiniHud: React.FC = () => {
   const [connections, setConnections] = useState<SAPConnection[]>([])
@@ -16,10 +17,8 @@ export const MiniHud: React.FC = () => {
     // Focus input on mount
     inputRef.current?.focus()
 
-    if (window.electronAPI) {
-      window.electronAPI.getConnections().then(data => setConnections(data))
-      window.electronAPI.getSettings().then(st => setLang(st.lang || 'zh'))
-    }
+    api.getConnections().then(data => setConnections(data))
+    api.getSettings().then(st => setLang(st.lang || 'zh'))
   }, [])
 
   // Composite search: e.g. "s4d se80"
@@ -44,17 +43,13 @@ export const MiniHud: React.FC = () => {
       if (!ok) return
     }
 
-    if (window.electronAPI) {
-      window.electronAPI.launchSAP(conn.id, directTcode)
-      window.electronAPI.hideHUD()
-    }
+    api.launchSAP(conn.id, directTcode)
+    api.hideHUD()
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
-      if (window.electronAPI) {
-        window.electronAPI.hideHUD()
-      }
+      api.hideHUD()
     } else if (e.key === 'ArrowDown') {
       e.preventDefault()
       if (selectedIndex < filtered.length - 1) {
