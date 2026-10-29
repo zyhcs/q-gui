@@ -128,7 +128,7 @@ export const App: React.FC = () => {
     const conn = connections.find((c) => c.id === id);
     if (!conn) return;
 
-    const shareText = `【SAP Connection】\nSID: ${conn.sid}\nDescription: ${conn.name}\nHost: ${conn.host}\nSysNr: ${conn.sysnr}\nClient: ${conn.client}\nUser: ${conn.user}\nLanguage: ${conn.lang}`;
+    const shareText = `【SAP Connection】\nSID: ${conn.sid}\nDescription: ${conn.name}\nHost: ${conn.host}\nSysNr: ${conn.sysnr}${conn.router ? `\nSAProuter: ${conn.router}` : ''}\nClient: ${conn.client}\nUser: ${conn.user}\nLanguage: ${conn.lang}`;
     await navigator.clipboard.writeText(shareText);
     showToast(translate('copied_share_toast'), 'success');
   };

@@ -97,6 +97,7 @@ export const VaultConfig: React.FC<VaultConfigProps> = ({
       sysnr: (formData.sysnr || '00').trim(),
       user: (formData.user || '').trim().toUpperCase(),
       lang: (formData.lang as LanguageCode) || 'ZH',
+      router: formData.router ? formData.router.trim() : undefined,
       password: formData.password || '',
       tcodes: tcodeList.length ? tcodeList : ['SE80'],
       pingMs: formData.pingMs || 10,
@@ -237,7 +238,7 @@ export const VaultConfig: React.FC<VaultConfigProps> = ({
                   type="text"
                   value={formData.host || ''}
                   onChange={e => setFormData({ ...formData, host: e.target.value })}
-                  placeholder="例: 10.20.10.41"
+                  placeholder="例: 10.20.10.41 或 172.26.190.125"
                   className="w-full px-3 py-1.5 rounded-lg bg-zinc-900/90 border border-white/[0.1] focus:outline-none focus:border-white/30 font-mono text-zinc-100"
                 />
               </div>
@@ -253,6 +254,21 @@ export const VaultConfig: React.FC<VaultConfigProps> = ({
                   className="w-full px-3 py-1.5 rounded-lg bg-zinc-900/90 border border-white/[0.1] focus:outline-none focus:border-white/30 font-mono text-zinc-100"
                 />
               </div>
+            </div>
+
+            {/* SAProuter 字符串 */}
+            <div className="col-span-2">
+              <div className="flex items-center justify-between mb-1">
+                <label className="font-medium text-zinc-400">{t('field_router')}</label>
+                <span className="text-[10px] text-zinc-500 font-normal">{t('router_sub')}</span>
+              </div>
+              <input
+                type="text"
+                value={formData.router || ''}
+                onChange={e => setFormData({ ...formData, router: e.target.value })}
+                placeholder="例: /H/SAPROUTER.dreame.tech 或 /H/1.2.3.4"
+                className="w-full px-3 py-1.5 rounded-lg bg-zinc-900/90 border border-white/[0.1] focus:outline-none focus:border-white/30 font-mono text-zinc-100"
+              />
             </div>
 
             <div>

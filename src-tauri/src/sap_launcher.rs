@@ -42,9 +42,26 @@ impl SapLauncher {
         (false, if !custom_path.is_empty() { custom_path.to_string() } else { common_paths[0].to_string() })
     }
 
+    /// 格式化 SAP 路由串
+    fn format_server_string(conn: &SAPConnection) -> String {
+        if let Some(r) = &conn.router {
+            let trimmed = r.trim();
+            if !trimmed.is_empty() {
+                let clean_r = if trimmed.starts_with('/') {
+                    trimmed.trim_end_matches('/')
+                } else {
+                    &format!("/H/{}", trimmed.trim_end_matches('/'))
+                };
+                return format!("{}/H/{}", clean_r, conn.host.trim());
+            }
+        }
+        conn.host.clone()
+    }
+
     /// 启动 SAP GUI 连接
     pub fn launch(conn: &SAPConnection, tcode: Option<&str>, configured_sapshcut: &str) -> LaunchResult {
         let (found, executable) = Self::detect_sapshcut(configured_sapshcut);
+        let server_target = Self::format_server_string(conn);
 
         #[cfg(target_os = "windows")]
         {
@@ -53,7 +70,7 @@ impl SapLauncher {
                 cmd.arg(format!("-system={}", conn.sid));
                 cmd.arg(format!("-client={}", conn.client));
                 cmd.arg(format!("-sysnumber={}", conn.sysnr));
-                cmd.arg(format!("-server={}", conn.host));
+                cmd.arg(format!("-server={}", server_target));
                 cmd.arg(format!("-language={}", conn.lang));
 
                 if !conn.user.is_empty() {
@@ -84,7 +101,6 @@ impl SapLauncher {
                     Err(e) => Self::launch_via_sap_shortcut_file(conn, tcode, &format!("sapshcut 拉起失败: {}", e)),
                 }
             } else {
-                // 如果未找到 sapshcut.exe，采用备选方案：生成临时 .sap 快捷方式文件并以系统关联打开
                 Self::launch_via_sap_shortcut_file(conn, tcode, "未找到 sapshcut.exe，尝试以快捷方式拉起")
             }
         }
@@ -95,9 +111,10 @@ impl SapLauncher {
             LaunchResult {
                 success: true,
                 message: format!(
-                    "[开发预览模式] 非 Windows 环境模拟启动 SAP 系统: {} (Client: {}) 事务码: {:?} (配置路径: {})",
+                    "[开发预览模式] 非 Windows 环境模拟启动 SAP 系统: {} (Client: {}) 目标: {} 事务码: {:?} (配置路径: {})",
                     conn.sid,
                     conn.client,
+                    server_target,
                     tcode,
                     executable
                 ),
@@ -123,16 +140,31 @@ impl SapLauncher {
             "".to_string()
         };
 
+        let gui_parm = if let Some(r) = &conn.router {
+            let trimmed = r.trim();
+            if !trimmed.is_empty() {
+                let clean_r = if trimmed.starts_with('/') {
+                    trimmed.trim_end_matches('/')
+                } else {
+                    &format!("/H/{}", trimmed.trim_end_matches('/'))
+                };
+                format!("{}/H/{}/S/32{}", clean_r, conn.host.trim(), conn.sysnr.trim())
+            } else {
+                format!("/H/{}/S/32{}", conn.host.trim(), conn.sysnr.trim())
+            }
+        } else {
+            format!("/H/{}/S/32{}", conn.host.trim(), conn.sysnr.trim())
+        };
+
         let content = format!(
-            "[System]\r\nName={sid}\r\nClient={client}\r\n[User]\r\nName={user}\r\nLanguage={lang}\r\n[Function]\r\nTitle={name}\r\nCommand={command}\r\nType=Transaction\r\n[Configuration]\r\nGuiParm=\"/H/{host}/S/32{sysnr}\"\r\n",
+            "[System]\r\nName={sid}\r\nClient={client}\r\n[User]\r\nName={user}\r\nLanguage={lang}\r\n[Function]\r\nTitle={name}\r\nCommand={command}\r\nType=Transaction\r\n[Configuration]\r\nGuiParm=\"{guiparm}\"\r\n",
             sid = conn.sid,
             client = conn.client,
             user = conn.user,
             lang = conn.lang,
             name = conn.name,
             command = command_line,
-            host = conn.host,
-            sysnr = conn.sysnr
+            guiparm = gui_parm
         );
 
         if let Ok(_) = std::fs::write(&sap_file, content) {
