@@ -1,6 +1,6 @@
 {
   "name": "q-gui",
-  "version": "1.0.0-beta.1",
+  "version": "1.0.0",
   "description": "Q-GUI (极龟) - Ultra-Lightweight Rust & Tauri SAP GUI Launcher",
   "author": "zyhcs",
   "license": "MIT",
