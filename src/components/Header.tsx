@@ -48,8 +48,8 @@ export const Header: React.FC<HeaderProps> = ({
           <span className="text-xs font-medium text-zinc-400">
             {t('app_subtitle')}
           </span>
-          <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-zinc-800 text-zinc-400 border border-white/10 ml-0.5">
-            v2.0
+          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-400 border border-emerald-500/30 ml-0.5">
+            v1.0.0-beta.8
           </span>
         </div>
       </div>

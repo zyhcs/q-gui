@@ -118,6 +118,11 @@ export const LaunchMatrix: React.FC<LaunchMatrixProps> = ({
                       <span className="font-mono text-xs px-1.5 py-0.2 rounded bg-zinc-900 border border-white/10 text-zinc-300">
                         {item.client}
                       </span>
+                      {item.router && (
+                        <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-indigo-950/80 text-indigo-300 border border-indigo-500/30" title={`SAProuter: ${item.router}`}>
+                          ROUTER
+                        </span>
+                      )}
                     </div>
 
                     {/* Action Icons */}

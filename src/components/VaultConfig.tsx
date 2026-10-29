@@ -139,8 +139,15 @@ export const VaultConfig: React.FC<VaultConfigProps> = ({
                 }`}
               >
                 <div className="truncate">
-                  <span className="font-mono font-bold">{item.sid}</span>
-                  <span className="text-[10px] text-zinc-500 font-mono ml-1">{item.client}</span>
+                  <div className="flex items-center gap-1">
+                    <span className="font-mono font-bold">{item.sid}</span>
+                    <span className="text-[10px] text-zinc-500 font-mono">{item.client}</span>
+                    {item.router && (
+                      <span className="text-[8px] font-mono px-1 py-0.2 rounded bg-indigo-950/80 text-indigo-400 border border-indigo-500/30" title={`SAProuter: ${item.router}`}>
+                        R
+                      </span>
+                    )}
+                  </div>
                   <div className="text-[10px] text-zinc-400 truncate">{item.name}</div>
                 </div>
 
