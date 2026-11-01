@@ -121,19 +121,12 @@ impl SapLauncher {
 
         #[cfg(target_os = "windows")]
         {
-            // 轨道 1: 使用完全独立参数调用 sapshcut.exe (带 -desc 与完整 -server/-guiparm)
+            // 轨道 1: 使用完全独立参数调用 sapshcut.exe (遵循 SAP Note 103019 标准参数)
             if found_shcut {
                 let mut cmd = Command::new(&shcut_executable);
                 cmd.arg(format!("-system={}", conn.sid.trim()));
-                // 核心修复: 传递 -desc 描述，杜绝 “系统描述未知”
-                cmd.arg(format!("-desc={}", desc));
+                cmd.arg(format!("-sysname={}", desc));
                 cmd.arg(format!("-client={}", conn.client.trim()));
-                cmd.arg(format!("-sysnumber={}", conn.sysnr.trim()));
-                // 核心修复: 传递完整的路由端口串，杜绝 “GUI 启动参数未知”
-                cmd.arg(format!("-server={}", conn_string));
-                cmd.arg(format!("-guiparm={}", conn_string));
-                cmd.arg(format!("-language={}", conn.lang.trim()));
-                cmd.arg("-maxgui");
 
                 if !conn.user.trim().is_empty() {
                     cmd.arg(format!("-user={}", conn.user.trim()));
@@ -144,6 +137,10 @@ impl SapLauncher {
                         cmd.arg(format!("-pw={}", pw.trim()));
                     }
                 }
+
+                cmd.arg(format!("-language={}", conn.lang.trim()));
+                cmd.arg(format!("-guiparm={}", conn_string));
+                cmd.arg("-maxgui");
 
                 let final_tcode = tcode.unwrap_or("").trim();
                 if !final_tcode.is_empty() {

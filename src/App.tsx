@@ -177,7 +177,10 @@ export const App: React.FC = () => {
 
   // 保存连接配置
   const handleSaveConnection = async (conn: SAPConnection) => {
-    const updated = connections.map((c) => (c.id === conn.id ? conn : c));
+    const exists = connections.some((c) => c.id === conn.id);
+    const updated = exists
+      ? connections.map((c) => (c.id === conn.id ? conn : c))
+      : [...connections, conn];
     setConnections(updated);
     await api.saveConnections(updated);
     showToast(`${translate('saved_toast')}${conn.sid}`, 'success');
