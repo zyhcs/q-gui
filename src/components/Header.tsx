@@ -49,7 +49,7 @@ export const Header: React.FC<HeaderProps> = ({
             {t('app_subtitle')}
           </span>
           <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-400 border border-emerald-500/30 ml-0.5">
-            v1.0.0-beta.8
+            v1.0.9
           </span>
         </div>
       </div>
